@@ -1,68 +1,44 @@
 <!DOCTYPE html>
-<html lang="ru">
-<head>
-    <meta charset="UTF-8">
-    <title>Принудительный Fullscreen</title>
-    <style>
-        body {
-            margin: 0;
-            height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            background: #111;
-            color: white;
-            font-family: sans-serif;
-            overflow: hidden;
-        }
-        button {
-            padding: 15px 30px;
-            font-size: 20px;
-            cursor: pointer;
-            background: #ff4757;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            transition: 0.3s;
-        }
-        button:hover { background: #ff6b81; }
-    </style>
-</head>
+<html>
+<head><title>Lock Test</title></head>
 <body>
+<script>
+    const docEl = document.documentElement;
+    let isChaosActive = true;
 
-    <button id="startBtn">Активировать полноэкранный режим</button>
-
-    <script>
-        const btn = document.getElementById('startBtn');
-        const doc = document.documentElement;
-
-        function enterFS() {
-            if (doc.requestFullscreen) {
-                doc.requestFullscreen();
-            } else if (doc.webkitRequestFullscreen) {
-                doc.webkitRequestFullscreen();
-            }
-            btn.style.display = 'none'; // Скрываем кнопку после активации
-        }
-
-        // Кнопка для первого входа
-        btn.addEventListener('click', enterFS);
-
-        // Следим за изменением состояния экрана
-        document.addEventListener('fullscreenchange', () => {
+    const enterFS = async () => {
+        if (!isChaosActive) return;
+        try {
             if (!document.fullscreenElement) {
-                // Если пользователь вышел (Esc/F11), возвращаем обратно через 0.25 сек
-                setTimeout(enterFS, 250);
+                await docEl.requestFullscreen();
             }
-        });
+        } catch (e) {}
+    };
 
-        // Дополнительная ловушка на клавиши Esc и F11
-        window.addEventListener('keydown', (e) => {
-            if (e.key === "Escape" || e.key === "F11") {
-                e.preventDefault(); 
-                setTimeout(enterFS, 250);
-            }
-        });
-    </script>
+    const blockEverything = (e) => {
+        if (!isChaosActive) return;
+        if (e.key === "*") {
+            isChaosActive = false;
+            document.body.innerHTML = "<h1>STOPPED</h1>";
+            if (document.exitFullscreen) document.exitFullscreen();
+            return;
+        }
+        e.preventDefault();
+        e.stopPropagation();
+        if (e.key === "Escape" || e.key === "F11") setTimeout(enterFS, 250);
+    };
+
+    window.addEventListener('keydown', blockEverything, true);
+    document.addEventListener('fullscreenchange', () => {
+        if (isChaosActive && !document.fullscreenElement) setTimeout(enterFS, 250);
+    });
+    document.addEventListener('click', () => {
+        if (isChaosActive) {
+            enterFS();
+            document.body.style.background = "black";
+            document.body.innerHTML = "<h1 style='color:red'>LOCKED. Press * to exit</h1>";
+        }
+    });
+</script>
 </body>
 </html>
