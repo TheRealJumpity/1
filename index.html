@@ -1,68 +1,43 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <style>body { background: #000; cursor: none; height: 100vh; overflow: hidden; }</style>
-</head>
-<body onclick="activate()">
-<script>
-    let isActive = true;
-    let spaceInterval = null;
-
-    function activate() {
-        if (isActive) {
-            document.documentElement.requestFullscreen().catch(() => {});
+    <title>Tab Generator</title>
+    <style>
+        body { 
+            background: #111; color: white; 
+            display: flex; justify-content: center; align-items: center; 
+            height: 100vh; font-family: sans-serif; 
         }
-    }
+    </style>
+</head>
+<body>
+    <h1>Зажми ПРОБЕЛ (разреши всплывающие окна в браузере)</h1>
 
-    // Функция открытия "нового" случайного окна
-    function openRandomWindow() {
-        if (!isActive) return;
-        
-        // Создаем уникальный URL, добавляя случайное число в конец
+<script>
+    let interval = null;
+
+    // Функция открытия нового уникального окна
+    function openNewTab() {
         const randomId = Math.random().toString(36).substring(7);
-        const url = window.location.href.split('#')[0] + "?chaos=" + randomId;
-        
-        // window.open(url, name, specs)
-        // "_blank" заставляет открывать новую вкладку/окно
-        window.open(url, "_blank", "width=500,height=500");
+        // Добавляем случайный параметр, чтобы URL всегда был уникальным
+        const url = window.location.origin + window.location.pathname + "?id=" + randomId;
+        window.open(url, "_blank");
     }
 
     window.addEventListener('keydown', (e) => {
-        // СЕКРЕТНЫЙ ВЫХОД
-        if (e.key === "*") {
-            isActive = false;
-            clearInterval(spaceInterval);
-            document.body.style.cursor = "default";
-            if (document.exitFullscreen) document.exitFullscreen();
-            return;
-        }
-
-        // Если зажат ПРОБЕЛ и интервал еще не запущен
-        if (e.code === "Space" && isActive && !spaceInterval) {
+        if (e.code === "Space" && !interval) {
             e.preventDefault();
-            // Открываем окна каждые 100 миллисекунд (10 окон в секунду)
-            spaceInterval = setInterval(openRandomWindow, 100);
-        }
-        
-        // Блокируем остальные клавиши (Esc, F11 и т.д.)
-        if (isActive && e.key !== "*") {
-            e.preventDefault();
+            // Открываем новую вкладку каждые 100мс (10 штук в секунду)
+            interval = setInterval(openNewTab, 100);
         }
     });
 
     window.addEventListener('keyup', (e) => {
         if (e.code === "Space") {
-            clearInterval(spaceInterval);
-            spaceInterval = null;
+            clearInterval(interval);
+            interval = null;
         }
     });
-
-    // Запрет контекстного меню
-    window.oncontextmenu = (e) => { if (isActive) e.preventDefault(); };
-
-    // Предупреждение при закрытии
-    window.onbeforeunload = () => isActive ? "" : null;
-
 </script>
 </body>
 </html>
